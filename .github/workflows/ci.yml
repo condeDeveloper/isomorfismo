@@ -1,0 +1,45 @@
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ${{ matrix.so }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        so: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # O juiz e a DEFINICAO: existe uma renomeacao dos vertices que leva um grafo
+      # no outro? O jeito de saber e tentar todas, e todas sao n fatorial. Nenhum
+      # invariante pode servir de juiz, porque invariante responde "sao
+      # diferentes" ou "nao sei", e "nao sei" nao e veredicto.
+      #
+      # Rodar em tres sistemas importa porque os grafos sorteados vem de um
+      # gerador escrito aqui: se eles mudassem entre sistemas, "o refinamento nao
+      # separou 323 dos 323 pares diferentes" nao seria comparavel com nada.
+      - name: testes
+        run: dotnet test testes/Isomorfismo.Testes/Isomorfismo.Testes.csproj -c Release --nologo -v q
+
+      - name: os pares de resposta sabida contra cada filtro
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- conhecido
+
+      - name: quantos pares cada filtro deixa passar
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- filtro
+
+      - name: o custo da busca, em escolhas consideradas
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- poda
+
+      - name: as simetrias e o que o refinamento consegue ver
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- simetria
